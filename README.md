@@ -122,6 +122,7 @@ The build scripts apply them at the right point in the build process.
 │   └── 30-paraview-gpu-launcher.sh ← runtime wrapper (LD_LIBRARY_PATH + ONEAPI_DEVICE_SELECTOR)
 └── docs/
     ├── verification.md           ← how to confirm the GPU is actually being used
+    ├── rendering-tips.md         ← OSPRay material gotchas, perf settings, known runtime quirks
     └── troubleshooting.md        ← every error we hit, with logs & fixes
 ```
 
