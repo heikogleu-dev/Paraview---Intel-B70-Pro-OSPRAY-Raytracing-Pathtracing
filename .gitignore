@@ -1,0 +1,7 @@
+# local build / install / cache artifacts that don't belong in this doc repo
+build/
+install/
+opt/
+*.log
+*.swp
+.DS_Store

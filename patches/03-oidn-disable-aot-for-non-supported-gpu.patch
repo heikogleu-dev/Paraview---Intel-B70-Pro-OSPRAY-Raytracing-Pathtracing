@@ -1,0 +1,35 @@
+From: Heiko Gleu <heiko_gleu@web.de>
+Subject: [PATCH] OSPRay superbuild: disable OIDN SYCL AOT (Battlemage not in target list)
+
+OpenImageDenoise builds with `OIDN_DEVICE_SYCL_AOT=ON` by default. The
+hard-coded AOT target list in OIDN covers:
+
+  XELP : tgllp, rkl, adl-s, adl-p, adl-n, dg1, mtl-m, mtl-p
+  XEHPG: acm-g10, acm-g11, acm-g12          (Alchemist Arc)
+  XEHPC: pvc-sdv, pvc                        (Ponte Vecchio)
+
+Battlemage (BMG-G21 / BMG-G31, e.g. Arc Pro B70) is NOT in this list.
+Worse, the AOT compile for `pvc-sdv,pvc` segfaults on systems that don't
+have a Ponte Vecchio GPU:
+
+    llvm-foreach: Segmentation fault (core dumped)
+    icpx: error: gen compiler command failed with exit code 254
+
+Disabling AOT enables JIT instead. Tradeoff: small one-time delay on first
+GPU kernel launch (cached afterwards via `OIDN_DEVICE_SYCL_JIT_CACHE=ON`,
+which remains enabled). For interactive ParaView use, this is invisible.
+
+Apply to: <ospray-source>/scripts/superbuild/dependencies/dep_oidn.cmake
+
+---
+diff --git a/scripts/superbuild/dependencies/dep_oidn.cmake b/scripts/superbuild/dependencies/dep_oidn.cmake
+--- a/scripts/superbuild/dependencies/dep_oidn.cmake
++++ b/scripts/superbuild/dependencies/dep_oidn.cmake
+@@ -50,6 +50,7 @@
+       -DCMAKE_BUILD_TYPE=Release # XXX debug builds are currently broken
+       -DOIDN_APPS=OFF
+       -DOIDN_ZIP_MODE=ON # to set install RPATH
+       -DOIDN_DEVICE_SYCL=${BUILD_GPU_SUPPORT}
++      -DOIDN_DEVICE_SYCL_AOT=OFF
+       -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+       -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}

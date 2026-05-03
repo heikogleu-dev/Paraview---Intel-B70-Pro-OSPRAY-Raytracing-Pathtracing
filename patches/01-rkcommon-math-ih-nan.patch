@@ -1,0 +1,34 @@
+From: Heiko Gleu <heiko_gleu@web.de>
+Subject: [PATCH] rkcommon: guard `nan` macro to ISPC context only
+
+The header `rkcommon/math/math.ih` defines `nan` as a preprocessor macro
+that expands to `floatbits(0x7FBFFFFF)`. This is fine for ISPC code, but
+the same header is also pulled into C++ translation units (e.g. by
+OpenVKL's GPU device sources). On systems with glibc >= 2.43 (Ubuntu
+26.04), `<bits/mathcalls.h>` declares `nan(...)` as a function via the
+`__MATHCALL` macro family. The macro expansion of OUR `nan` then mangles
+those declarations and produces hundreds of bizarre errors:
+
+    error: redefinition of 'floatbits' as different kind of symbol
+    error: pasting formed ')f', an invalid preprocessing token
+    error: redeclaration of '__floatbits' with a different type
+
+The ISPC `nan` macro is not actually needed in C++ context (only `inf`,
+`pos_inf`, `neg_inf` are used), so guard it under `#ifdef ISPC`.
+
+Apply to: <install-prefix>/rkcommon/include/rkcommon/math/math.ih
+
+---
+diff --git a/rkcommon/math/math.ih b/rkcommon/math/math.ih
+--- a/rkcommon/math/math.ih
++++ b/rkcommon/math/math.ih
+@@ -30,7 +30,9 @@
+ #define inf floatbits(0x7F800000)
+ #define pos_inf floatbits(0x7F800000)
+ #define neg_inf floatbits(0xFF800000)
+-#define nan floatbits(0x7FBFFFFF)
++#ifdef ISPC
++#define nan floatbits(0x7FBFFFFF)
++#endif
+ // smallest positive normal number 2^-126 ~ 1.17549435e-38
+ #define flt_min 0x1.0p-126f

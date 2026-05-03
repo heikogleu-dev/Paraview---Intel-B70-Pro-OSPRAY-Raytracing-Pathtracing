@@ -1,0 +1,47 @@
+From: Heiko Gleu <heiko_gleu@web.de>
+Subject: [PATCH] embree 4.3.x: replace removed sycl::sub_group::shuffle methods
+
+Embree 4.3.3 (the version OSPRay 3.2.0 pins via its superbuild) uses the
+provisional SYCL 2020 member functions `sycl::sub_group::shuffle()`,
+`shuffle_down()` and `shuffle_up()`. These were removed from SYCL 2020
+final and are no longer present in Intel oneAPI DPC++ 2026.0.
+
+Build error against DPC++ 2026.0:
+
+    error: no member named 'shuffle' in 'sycl::sub_group'
+    error: no member named 'shuffle_down' in 'sycl::sub_group'
+    error: no member named 'shuffle_up' in 'sycl::sub_group'
+
+Replace the member calls with the SYCL 2020 standard free functions
+from <sycl/group_algorithm.hpp> (already included transitively):
+
+    sub_group::shuffle(g, x, id)        -> sycl::select_from_group(g, x, id)
+    sub_group::shuffle_down(g, x, delta) -> sycl::shift_group_left(g, x, delta)
+    sub_group::shuffle_up(g, x, delta)   -> sycl::shift_group_right(g, x, delta)
+
+Apply to: <embree-source>/common/sys/sycl.h
+
+---
+diff --git a/common/sys/sycl.h b/common/sys/sycl.h
+--- a/common/sys/sycl.h
++++ b/common/sys/sycl.h
+@@ -283,15 +283,15 @@
+   }
+
+   template <typename T> __forceinline T sub_group_shuffle(T x, sycl::id<1> local_id) {
+-    return this_sub_group().shuffle(x, local_id);
++    return sycl::select_from_group(this_sub_group(), x, local_id);
+   }
+
+   template <typename T> __forceinline T sub_group_shuffle_down(T x, uint32_t delta) {
+-    return this_sub_group().shuffle_down(x, delta);
++    return sycl::shift_group_left(this_sub_group(), x, delta);
+   }
+-
++
+   template <typename T> __forceinline T sub_group_shuffle_up(T x, uint32_t delta) {
+-    return this_sub_group().shuffle_up(x, delta);
++    return sycl::shift_group_right(this_sub_group(), x, delta);
+   }
+
+   template <typename T> __forceinline T sub_group_load(const void* src) {

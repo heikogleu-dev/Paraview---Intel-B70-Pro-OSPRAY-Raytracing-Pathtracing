@@ -1,0 +1,35 @@
+From: Heiko Gleu <heiko_gleu@web.de>
+Subject: [PATCH] OSPRay superbuild: forward CMAKE_POLICY_VERSION_MINIMUM=3.5 to subprojects
+
+CMake 4.0 (shipped with Ubuntu 26.04 as `cmake` 4.2.x) removes
+compatibility with `cmake_minimum_required(VERSION < 3.5)`. Several
+upstream subprojects pulled in by the OSPRay superbuild still declare
+ancient minimums (OpenVKL, OpenPGL, glfw, etc.):
+
+    CMake Error at CMakeLists.txt:6 (cmake_minimum_required):
+      Compatibility with CMake < 3.5 has been removed from CMake.
+
+CMake offers an opt-out via `-DCMAKE_POLICY_VERSION_MINIMUM=3.5`, but
+this must be passed explicitly to each ExternalProject. Setting it on
+the top-level superbuild configure does NOT propagate.
+
+This patch adds the flag to every subproject CMAKE_ARGS list, right
+after `-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}`.
+
+Apply to: <ospray-source>/scripts/superbuild/dependencies/dep_*.cmake
+       and <ospray-source>/scripts/superbuild/build_ospray.cmake
+
+---
+Example (dep_openvkl.cmake), apply analogously to all dep_*.cmake +
+build_ospray.cmake:
+
+diff --git a/scripts/superbuild/dependencies/dep_openvkl.cmake b/scripts/superbuild/dependencies/dep_openvkl.cmake
+--- a/scripts/superbuild/dependencies/dep_openvkl.cmake
++++ b/scripts/superbuild/dependencies/dep_openvkl.cmake
+@@ -36,6 +36,7 @@
+     CMAKE_ARGS
+       -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
++      -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+       -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
