@@ -20,21 +20,39 @@ final beauty render.
 
 ## "My geometry turned solid green / solid grey when I enabled Ray Tracing"
 
-OSPRay needs an explicit material on each surface. If none is set,
-ParaView falls back to a default material that ignores the color map.
+**Confirmed root cause (OpenFOAM + OSPRay path tracer):** OSPRay does
+not render Cell Data colormaps reliably on surfaces — it needs Point
+Data. The OpenFOAM reader's "Create cell-to-point filtered data"
+checkbox is supposed to handle this transparently, but in practice
+OSPRay still falls back to a default solid colour for surfaces whose
+active scalar comes from the cell-data path.
 
-Checklist:
+**The fix that worked:**
 
-1. **Pipeline Browser** → click your filter (e.g. "Car")
-2. **Properties Panel** → scroll to **Coloring** → confirm the array
-   you wanted (e.g. `wallShearStress` / `Magnitude`) is selected.
-   Switching to OSPRay sometimes resets it to "Solid Color".
-3. **Properties Panel** → scroll to **Ray Tracing** → **Material**
-   dropdown → set to **`None`**. "None" means "use the colormap as
-   pseudo‑material", which is what you want for false‑colour CFD vis.
-4. If you DO want a physical look (e.g. matte clay car body to highlight
-   only the surface‑pressure colormap on top): set Material to
-   `OBJMaterial` or one of the presets, and check the related sub‑properties.
+1. In the Pipeline Browser, select your filter (e.g. the OpenFOAM
+   reader, or whatever holds your wallShearStress / pressure / etc.)
+2. **Filters → Alphabetical → "Cell Data To Point Data"**
+3. Apply.
+4. Set the new node's Coloring to your scalar array (e.g.
+   `wallShearStress` / `Magnitude`).
+5. Render — surface now picks up the colormap correctly under
+   OSPRay path tracer.
+
+The streamline / tube mappers in ParaView pass colours through
+unaffected, which is why streamlines around the body looked correct
+even while the body itself was solid green.
+
+### Less likely, but worth checking if the fix above doesn't help
+
+- **Properties Panel must be in "Advanced" view** to see the Material
+  dropdown — click the gear icon ⚙ in the Properties search bar.
+  The full **Ray Tracing** group with `OSPRayMaterial`,
+  `OSPRayScaleArray` etc. is hidden in "default" mode.
+- `OSPRayMaterial` defaults to `None`, which means "use the colormap".
+  If somebody set it to a preset (Plastic, Metal, …) the colormap is
+  bypassed.
+- In **"Coloring"** make sure the dropdown isn't on "Solid Color".
+  Switching backends sometimes resets it.
 
 ## "Switching to OSPRay locks ParaView for 30+ seconds"
 
