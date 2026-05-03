@@ -78,7 +78,11 @@ The build scripts apply them at the right point in the build process.
 
 - ✅ ParaView 6.1.0 GUI launches with `-DPARAVIEW_ENABLE_RAYTRACING=ON`
 - ✅ "OSPRay path tracer" and "OSPRay raycaster" available as render
-  backends in `View → Render View → Backend`
+  backends in the Render View properties panel under
+  **Ray Traced Rendering → Back End**
+- ✅ Default device is GPU (driven by `OSPRAY_LOAD_MODULES=gpu` +
+  `OSPRAY_DEVICE=gpu` env vars set by the launcher script — the GUI
+  itself has no CPU/GPU switch)
 - ✅ SYCL device 0 (the discrete Arc Pro B70 = `Intel(R) Graphics [0xe223]`)
   is selected at runtime — confirm via:
   ```

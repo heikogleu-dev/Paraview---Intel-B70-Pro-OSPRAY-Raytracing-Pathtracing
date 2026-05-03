@@ -69,15 +69,28 @@ LD_LIBRARY_PATH=$LIBS $ROOT/ospray/bin/ospBenchmark --benchmark_filter=PathTrace
   --osp:device=gpu --osp:load-modules=gpu
 ```
 
-## 4. (Bonus) ParaView itself
+## 4. ParaView itself
 
-Inside ParaView, after enabling "OSPRay path tracer" in Render View
-properties:
+ParaView 6.1's GUI has **no CPU/GPU switch**. The choice is driven by
+two OSPRay environment variables that the launcher script sets before
+calling the `paraview` binary:
 
-- **Tools → Settings → Render View → OSPRay**: there's an `OSPRay device`
-  dropdown. Set it to `gpu`. (If it only shows `cpu`, the GPU module
-  was not found at runtime — your `LD_LIBRARY_PATH` is wrong, see
-  troubleshooting.)
-- **Edit → Settings → General → Show Annotation**: the rendering FPS
-  in the corner of the viewport will jump dramatically when GPU is
-  active vs CPU.
+```
+OSPRAY_LOAD_MODULES=gpu
+OSPRAY_DEVICE=gpu
+```
+
+ParaView's RTWrapper calls `ospInit(nullptr, nullptr)`, which reads
+those env vars and creates a GPU OSPRay device. The GUI controls only
+the "Enable Ray Tracing" toggle and the "Back End" choice (raycaster vs
+path tracer):
+
+- Click on the Render View, then in the **Properties panel** (lower
+  left, NOT Tools → Settings) scroll to **Ray Traced Rendering**.
+- Tick **Enable Ray Tracing**.
+- **Back End** dropdown → choose `OSPRay raycaster` or `OSPRay pathtracer`.
+
+To verify the GPU device was actually picked, use methods 1–3 above —
+the GUI itself doesn't tell you. Easiest cross‑check: rotate the camera
+with `intel_gpu_top` open in another terminal and watch the Render/3D
+engine spike.

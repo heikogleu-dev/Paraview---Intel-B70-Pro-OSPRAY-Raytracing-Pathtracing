@@ -32,4 +32,11 @@ export ONEAPI_DEVICE_SELECTOR="level_zero:0"
 export OIDN_DEVICE_SYCL_JIT_CACHE="${HOME}/.cache/oidn-sycl-jit"
 mkdir -p "$OIDN_DEVICE_SYCL_JIT_CACHE"
 
+# Tell OSPRay (which ParaView's RTWrapper calls as ospInit(nullptr,nullptr))
+# to load the GPU module and make the GPU device the default. Without these
+# env vars, ParaView would silently init the default CPU device even with
+# the OSPRay-GPU build linked in -- the GUI has no CPU/GPU switch.
+export OSPRAY_LOAD_MODULES="gpu"
+export OSPRAY_DEVICE="gpu"
+
 exec "$PV_PREFIX/bin/paraview" "$@"
